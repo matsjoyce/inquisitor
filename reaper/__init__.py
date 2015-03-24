@@ -10,10 +10,17 @@ class ExceptionInformation:
         self.unhandled = unhandled
 
 
+DEFAULT_COLLECTORS = [collectors.FrameStackCollector(),
+                      collectors.SystemInformationCollector(),
+                      collectors.TimeCollector(),
+                      collectors.ExceptionInfoCollector()]
+DEFAULT_HANDLERS = [handlers.PrintTracebackHandler()]
+
+
 class Reaper:
     def __init__(self, collectors=None, handlers=None):
-        self.collectors = collectors or []
-        self.handlers = handlers or []
+        self.collectors = collectors or DEFAULT_COLLECTORS
+        self.handlers = handlers or DEFAULT_HANDLERS
 
     def __enter__(self):
         return self
