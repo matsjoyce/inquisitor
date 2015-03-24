@@ -72,5 +72,5 @@ class XMLFileDumpHandler(Handler):
         print(root)
         self.xmlify(collection, root)
         self.indent(root)
-        with open(self.fname, "wb") as f:
-            f.write(ETree.tostring(root))
+        with open(self.fname, "wb") as outfile:
+            outfile.write(ETree.tostring(root))

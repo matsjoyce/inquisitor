@@ -3,7 +3,6 @@ import builtins
 import collections.abc
 import inspect
 import platform
-import os
 import sys
 import time
 import types
@@ -28,12 +27,12 @@ class Snipped:
 class FrameStackCollector(Collector):
     def __init__(self, max_levels=5):
         super().__init__("frame_stack")
-        self.max_levels = 5
+        self.max_levels = max_levels
 
     def try_get_vars(self, var):
         try:
             return vars(var)
-        except:
+        except TypeError:
             return {}
 
     def record(self, var):
@@ -91,18 +90,17 @@ class FrameStackCollector(Collector):
         frames = multidict.MultiDict()
         stack = inspect.getinnerframes(info.traceback)
         seen = set()
-        for f, file, lineno, func, *s in stack:
+        for f, file, lineno, func, *_ in stack:
             print(file, lineno)
-            globals = {n: self.get_var(v, seen) for n, v in f.f_globals.items()
-                       if self.record_attr(n)}
+            globs = {n: self.get_var(v, seen) for n, v in f.f_globals.items()
+                     if self.record_attr(n)}
             if f.f_locals is not f.f_globals:
-                locals = {n: self.get_var(v, seen)
-                          for n, v in f.f_locals.items()
-                          if self.record_attr(n)}
+                locs = {n: self.get_var(v, seen) for n, v in f.f_locals.items()
+                        if self.record_attr(n)}
             else:
-                locals = "<same as globals>"
-            frames["frame"] = multidict.MultiDict(locals=locals,
-                                                  globals=globals,
+                locs = "<same as globals>"
+            frames["frame"] = multidict.MultiDict(locals=locs,
+                                                  globals=globs,
                                                   filename=file,
                                                   lineno=lineno,
                                                   function=func)

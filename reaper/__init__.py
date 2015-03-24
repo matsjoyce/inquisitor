@@ -11,9 +11,9 @@ class ExceptionInformation:
 
 
 class Reaper:
-    def __init__(self, collectors=[], handlers=[]):
-        self.collectors = collectors
-        self.handlers = handlers
+    def __init__(self, collectors=None, handlers=None):
+        self.collectors = collectors or []
+        self.handlers = handlers or []
 
     def __enter__(self):
         return self
