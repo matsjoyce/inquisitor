@@ -1,4 +1,4 @@
-from . import collectors, handlers
+from . import collectors, handlers, utils
 
 
 class ExceptionInformation:
@@ -15,12 +15,14 @@ DEFAULT_COLLECTORS = [collectors.FrameStackCollector(),
                       collectors.TimeCollector(),
                       collectors.ExceptionInfoCollector()]
 DEFAULT_HANDLERS = [handlers.PrintTracebackHandler()]
+DEFAULT_IGNORE = (KeyboardInterrupt, SystemExit)
 
 
 class Reaper:
-    def __init__(self, collectors=None, handlers=None):
+    def __init__(self, collectors=None, handlers=None, ignore=None):
         self.collectors = collectors or DEFAULT_COLLECTORS
         self.handlers = handlers or DEFAULT_HANDLERS
+        self.ignore = ignore or DEFAULT_IGNORE
 
     def __enter__(self):
         return self
@@ -30,10 +32,11 @@ class Reaper:
             self.exception_3arg(*args, unhandled=False)
 
     def exception(self, exc, unhandled=True):
-        info = ExceptionInformation(exc, unhandled=unhandled)
-        collection = {col.name: col.collect(info) for col in self.collectors}
-        for handler in self.handlers:
-            handler.handle(info, collection)
+        if not isinstance(exc, self.ignore):
+            info = ExceptionInformation(exc, unhandled=unhandled)
+            collection = {c.name: c.collect(info) for c in self.collectors}
+            for handler in self.handlers:
+                handler.handle(info, collection)
 
     def exception_3arg(self, exc_type, exc, traceback, unhandled=True):
         return self.exception(exc, unhandled=unhandled)

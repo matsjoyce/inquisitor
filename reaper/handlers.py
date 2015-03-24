@@ -49,7 +49,6 @@ class XMLFileDumpHandler(Handler):
                 sub = ETree.SubElement(element, "item")
                 self.xmlify(value, sub)
         else:
-            print("Unhandled type", type(var))
             element.text = repr(var)
 
     def indent(self, elem, level=0):
@@ -69,7 +68,6 @@ class XMLFileDumpHandler(Handler):
 
     def handle(self, info, collection):
         root = ETree.Element("exception")
-        print(root)
         self.xmlify(collection, root)
         self.indent(root)
         with open(self.fname, "wb") as outfile:
