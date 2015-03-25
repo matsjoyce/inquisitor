@@ -11,6 +11,25 @@ class Handler(abc.ABC):
         pass
 
 
+class FileHandler(Handler):
+    def __init__(self, fname=None, reportmanager=None):
+        self._fname = fname
+        self._reportmanager = reportmanager
+        if (fname is None and reportmanager is None
+           or fname is not None and reportmanager is not None):
+            raise ValueError("Must have a file name or a report manager")
+
+    @property
+    def fname(self):
+        if self._reportmanager is not None:
+            return self._reportmanager.next_filename
+        return self._fname
+
+    def update_filesystem(self):
+        if self._reportmanager is not None:
+            self._reportmanager.size_checks()
+
+
 class PrintTracebackHandler(Handler):
     def __init__(self, print_when_not_unhandled=False):
         self.print_when_not_unhandled = print_when_not_unhandled
@@ -31,10 +50,7 @@ class PPrintStreamHandler(Handler):
               flush=True)
 
 
-class XMLFileDumpHandler(Handler):
-    def __init__(self, fname):
-        self.fname = fname
-
+class XMLFileDumpHandler(FileHandler):
     def xmlify(self, var, element):
         if isinstance(var, dict):
             for name, value in var.items():
@@ -72,3 +88,4 @@ class XMLFileDumpHandler(Handler):
         self.indent(root)
         with open(self.fname, "wb") as outfile:
             outfile.write(ETree.tostring(root))
+        self.update_filesystem()
