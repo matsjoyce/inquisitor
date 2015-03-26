@@ -2,12 +2,14 @@ from . import collectors, handlers, utils
 
 
 class ExceptionInformation:
-    def __init__(self, exc, unhandled=True):
+    def __init__(self, exc, unhandled=True, tracker_url=None):
         self.exc = exc
         self.exc_type = type(exc)
         self.traceback = exc.__traceback__
         self.frame_stack = self.traceback.tb_frame
         self.unhandled = unhandled
+        self.file_location = None
+        self.tracker_url = tracker_url
 
 
 DEFAULT_COLLECTORS = [collectors.FrameStackCollector(),
@@ -19,10 +21,12 @@ DEFAULT_IGNORE = (KeyboardInterrupt, SystemExit)
 
 
 class Reaper:
-    def __init__(self, collectors=None, handlers=None, ignore=None):
+    def __init__(self, collectors=None, handlers=None, ignore=None,
+                 tracker_url=None):
         self.collectors = collectors or DEFAULT_COLLECTORS
         self.handlers = handlers or DEFAULT_HANDLERS
         self.ignore = ignore or DEFAULT_IGNORE
+        self.tracker_url = tracker_url
 
     def __enter__(self):
         return self
@@ -33,7 +37,8 @@ class Reaper:
 
     def exception(self, exc, unhandled=True):
         if not isinstance(exc, self.ignore):
-            info = ExceptionInformation(exc, unhandled=unhandled)
+            info = ExceptionInformation(exc, unhandled=unhandled,
+                                        tracker_url=self.tracker_url)
             collection = {c.name: c.collect(info) for c in self.collectors}
             for handler in self.handlers:
                 handler.handle(info, collection)

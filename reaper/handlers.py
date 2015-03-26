@@ -1,4 +1,6 @@
 import abc
+import math
+import pathlib
 import pprint
 import sys
 import traceback
@@ -18,16 +20,40 @@ class FileHandler(Handler):
         if (fname is None and reportmanager is None
            or fname is not None and reportmanager is not None):
             raise ValueError("Must have a file name or a report manager")
+        self.last_filename = None
 
     @property
     def fname(self):
         if self._reportmanager is not None:
-            return self._reportmanager.next_filename
-        return self._fname
+            self.last_filename = self._reportmanager.next_filename
+        else:
+            self.last_filename = self._fname
+        return self.last_filename
 
-    def update_filesystem(self):
+    def update(self, info):
         if self._reportmanager is not None:
             self._reportmanager.size_checks()
+        if pathlib.Path(self.last_filename).is_file():
+            info.file_location = self.last_filename
+        else:
+            info.file_location = None
+
+
+DEFAULT_EXCEPTION_MESSAGE = """An unhandled exception has been detected.
+Please file a bug report at "{tracker_url}",
+attaching the report file saved at "{file_location}".""".replace("\n", " ")
+
+
+class MessageHandler(Handler):
+    def __init__(self, title="Unhandled exception",
+                 msg=DEFAULT_EXCEPTION_MESSAGE,
+                 when_not_unhandled=False):
+        self.title = title
+        self.msg = msg
+        self.when_not_unhandled = when_not_unhandled
+
+    def formatted_msg(self, info):
+        return self.msg.format(**info.__dict__)
 
 
 class PrintTracebackHandler(Handler):
@@ -88,4 +114,39 @@ class XMLFileDumpHandler(FileHandler):
         self.indent(root)
         with open(self.fname, "wb") as outfile:
             outfile.write(ETree.tostring(root))
-        self.update_filesystem()
+        self.update(info)
+
+
+class StreamMessageHandler(MessageHandler):
+    def __init__(self, *args, stream=sys.stdout, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stream = stream
+
+    def handle(self, info, collection):
+        if not info.unhandled and not self.when_not_unhandled:
+            return
+        side_bar_width = round((80 - 2 - len(self.title)) / 2 - 0.5)
+        title = " ".join(("=" * side_bar_width,
+                          self.title,
+                          "=" * side_bar_width))
+        print(file=self.stream)
+        print(title, file=self.stream)
+        fmsg = self.formatted_msg(info)
+        lines = [[]]
+        for i in fmsg.split():
+            if len(" ".join(lines[-1] + [i])) > 80:
+                lines.append([])
+            lines[-1].append(i)
+        print("\n".join(map(" ".join, lines)),
+              file=self.stream)
+        print("=" * len(title), file=self.stream)
+        print(file=self.stream)
+
+
+class TkinterMessageHandler(MessageHandler):
+    def handle(self, info, collection):
+        if not info.unhandled and not self.when_not_unhandled:
+            return
+        from tkinter import messagebox
+        messagebox.showerror(title=self.title,
+                             message=self.formatted_msg(info))
