@@ -2,6 +2,8 @@ import abc
 import builtins
 import collections.abc
 import inspect
+import io
+import logging
 import platform
 import sys
 import time
@@ -12,7 +14,7 @@ from . import multidict
 
 class Collector(abc.ABC):
     def __init__(self, name):
-        self.name = name
+        self.collector_name = name
 
     @abc.abstractmethod
     def collect(self, info):
@@ -150,3 +152,13 @@ class ExceptionInfoCollector(Collector):
         return {"type": info.exc_type.__qualname__,
                 "msg": str(info.exc),
                 "args": info.exc.args}
+
+
+class LoggingCollector(Collector, logging.StreamHandler):
+    def __init__(self):
+        Collector.__init__(self, "logging")
+        logging.StreamHandler.__init__(self, stream=io.StringIO())
+        self.setLevel(logging.DEBUG)
+
+    def collect(self, info):
+        return self.stream.getvalue()

@@ -39,7 +39,8 @@ class Inquisitor:
         if not isinstance(exc, self.ignore):
             info = ExceptionInformation(exc, unhandled=unhandled,
                                         tracker_url=self.tracker_url)
-            collection = {c.name: c.collect(info) for c in self.collectors}
+            collection = {c.collector_name: c.collect(info)
+                          for c in self.collectors}
             for handler in self.handlers:
                 handler.handle(info, collection)
 
