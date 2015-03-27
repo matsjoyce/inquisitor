@@ -43,7 +43,7 @@ class FrameStackCollector(Collector):
                           sys.base_prefix).startswith(sys.base_prefix)):
             return False
         elif (isinstance(var, types.ModuleType)
-              and getattr(var, "__package__", "") == "reaper"):
+              and getattr(var, "__package__", "") == "inquisitor"):
             return False
         elif (isinstance(var, (types.FunctionType, types.MethodType))
               and var.__name__.startswith("__")):
@@ -112,7 +112,8 @@ class SystemInformationCollector(Collector):
         super().__init__("system_information")
 
     def collect(self, info):
-        uname = dict(zip(("system", "node", "release", "version", "machine", "processor"), platform.uname()))
+        uname = dict(zip(("system", "node", "release", "version",
+                          "machine", "processor"), platform.uname()))
         python = {"version": platform.python_version(),
                   "implementation": platform.python_implementation(),
                   "compiler": platform.python_compiler(),

@@ -14,7 +14,7 @@ class ReportManager:
         self.max_no_files = max_no_files
         self.num_sub = "{{{}}}".format(num_sub)
         if self.num_sub not in self.patten:
-            return ValueError("Number substitution not in patten")
+            raise ValueError("Number substitution not in patten")
         re_pat = re.escape(patten).replace(re.escape(self.num_sub),
                                            r"(?P<num>\d+)")
         self.re_patten = re.compile(re_pat)

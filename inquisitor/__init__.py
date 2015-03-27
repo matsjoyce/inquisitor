@@ -20,7 +20,7 @@ DEFAULT_HANDLERS = [handlers.PrintTracebackHandler()]
 DEFAULT_IGNORE = (KeyboardInterrupt, SystemExit)
 
 
-class Reaper:
+class Inquisitor:
     def __init__(self, collectors=None, handlers=None, ignore=None,
                  tracker_url=None):
         self.collectors = collectors or DEFAULT_COLLECTORS
