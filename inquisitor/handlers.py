@@ -1,4 +1,5 @@
 import abc
+import logging
 import pathlib
 import pprint
 import sys
@@ -63,6 +64,18 @@ class PrintTracebackHandler(Handler):
         if not info.unhandled and not self.print_when_not_unhandled:
             return
         traceback.print_exception(info.exc_type, info.exc, info.traceback)
+
+
+class LogTracebackHandler(Handler):
+    def __init__(self, logger=None, when_not_unhandled=False):
+        self.logger = logger or logging.getLogger(__name__)
+        self.when_not_unhandled = when_not_unhandled
+
+    def handle(self, info, collection):
+        if not info.unhandled and not self.when_not_unhandled:
+            return
+        self.logger.error("Exception:",
+                          exc_info=(info.exc_type, info.exc, info.traceback))
 
 
 class PPrintStreamHandler(Handler):

@@ -93,7 +93,6 @@ class FrameStackCollector(Collector):
         stack = inspect.getinnerframes(info.traceback)
         seen = set()
         for f, file, lineno, func, *_ in stack:
-            print(file, lineno)
             globs = {n: self.get_var(v, seen) for n, v in f.f_globals.items()
                      if self.record_attr(n)}
             if f.f_locals is not f.f_globals:
