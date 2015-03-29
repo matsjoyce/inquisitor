@@ -11,6 +11,10 @@ class ExceptionInformation:
         self.file_location = None
         self.tracker_url = tracker_url
 
+    @property
+    def three_arg(self):
+        return self.exc_type, self.exc, self.traceback
+
 
 DEFAULT_COLLECTORS = [collectors.FrameStackCollector(),
                       collectors.SystemInformationCollector(),
@@ -27,6 +31,7 @@ class Inquisitor:
         self.handlers = handlers or DEFAULT_HANDLERS
         self.ignore = ignore or DEFAULT_IGNORE
         self.tracker_url = tracker_url
+        self.enabled = True
 
     def __enter__(self):
         return self
@@ -35,22 +40,43 @@ class Inquisitor:
         if args[1] is not None:
             self.exception_3arg(*args, unhandled=False)
 
-    def exception(self, exc, unhandled=True):
-        if not isinstance(exc, self.ignore):
-            info = ExceptionInformation(exc, unhandled=unhandled,
-                                        tracker_url=self.tracker_url)
-            collection = {c.collector_name: c.collect(info)
-                          for c in self.collectors}
-            for handler in self.handlers:
-                handler.handle(info, collection)
+    def exception(self, exc, unhandled=True, disabled=None):
+        if self.enabled:
+            if not isinstance(exc, self.ignore):
+                info = ExceptionInformation(exc, unhandled=unhandled,
+                                            tracker_url=self.tracker_url)
+                collection = {c.collector_name: c.collect(info)
+                              for c in self.collectors}
+                for handler in self.handlers:
+                    handler.handle(info, collection)
+        else:
+            if disabled is not None:
+                return disabled(exc)
 
-    def exception_3arg(self, exc_type, exc, traceback, unhandled=True):
-        return self.exception(exc, unhandled=unhandled)
+    def exception_3arg(self, exc_type, exc, traceback,
+                       unhandled=True, disabled=None):
+        if disabled is None:
+            return self.exception(exc, unhandled=unhandled)
+        else:
+            return self.exception(exc, unhandled=unhandled,
+                                  disabled=lambda exc: disabled(exc_type,
+                                                                exc,
+                                                                traceback))
 
     def watch_sys_excepthook(self):
         import sys
-        sys.excepthook = self.exception_3arg
+
+        def replacement(*args, orig=sys.excepthook):
+            return self.exception_3arg(*args, disabled=orig)
+
+        sys.excepthook = replacement
 
     def watch_tkinter_report_callback_exception(self):
         import tkinter
-        tkinter.Tk.report_callback_exception = self.exception_3arg
+
+        def replacement(root, *args,
+                        orig=tkinter.Tk.report_callback_exception):
+            return self.exception_3arg(*args,
+                                       disabled=lambda *a: orig(root, *a))
+
+        tkinter.Tk.report_callback_exception = replacement
