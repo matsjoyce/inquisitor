@@ -9,6 +9,8 @@ class ReportManager:
     def __init__(self, directory, patten, max_no_files=None,
                  max_files_size=None, num_sub="no"):
         self.directory = pathlib.Path(directory)
+        if not self.directory.exists():
+            self.directory.mkdir()
         self.patten = patten
         self.max_files_size = max_files_size
         self.max_no_files = max_no_files
