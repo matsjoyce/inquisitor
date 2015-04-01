@@ -47,10 +47,12 @@ attaching the report file saved at "{file_location}".""".replace("\n", " ")
 class MessageHandler(Handler):
     def __init__(self, title="Unhandled exception",
                  msg=DEFAULT_EXCEPTION_MESSAGE,
-                 when_not_unhandled=False):
+                 when_not_unhandled=False, ask_start_db=False, db_cmd=None):
         self.title = title
         self.msg = msg
         self.when_not_unhandled = when_not_unhandled
+        self.ask_start_db = ask_start_db
+        self.db_cmd = db_cmd
 
     def formatted_msg(self, info):
         return self.msg.format(**info.__dict__)
@@ -160,5 +162,12 @@ class TkinterMessageHandler(MessageHandler):
         if not info.unhandled and not self.when_not_unhandled:
             return
         from tkinter import messagebox
-        messagebox.showerror(title=self.title,
-                             message=self.formatted_msg(info))
+        if self.ask_start_db:
+            r = messagebox._show(self.title, self.formatted_msg(info)
+                                 + " Do you want to start the debugger?",
+                                 messagebox.ERROR, messagebox.YESNO)
+            if r == "yes":
+                self.db_cmd(*info.three_arg)
+        else:
+            messagebox.showerror(title=self.title,
+                                 message=self.formatted_msg(info))
